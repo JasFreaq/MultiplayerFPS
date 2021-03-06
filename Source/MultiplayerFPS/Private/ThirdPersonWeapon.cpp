@@ -1,6 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Components/SphereComponent.h"
+#include "Net/UnrealNetwork.h"
 #include "MultiplayerFPS/Public/FirstPersonWeapon.h"
 #include "ThirdPersonWeapon.h"
 
@@ -16,7 +17,6 @@ AThirdPersonWeapon::AThirdPersonWeapon()
 	WeaponMesh->SetSimulatePhysics(true);
 	WeaponMesh->SetCollisionProfileName("IgnoreOnlyPawn");
 	WeaponMesh->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
-	WeaponMesh->SetOwnerNoSee(true);
 	
 	PickupVolume = CreateDefaultSubobject<USphereComponent>(TEXT("Pickup Volume"));
 	PickupVolume->SetupAttachment(RootComponent);
@@ -42,21 +42,19 @@ void AThirdPersonWeapon::BeginPlay()
 	FirstPersonWeapon->SetOwner(this);
 }
 
-void AThirdPersonWeapon::EquippedWeapon/*_Implementation*/(bool bEquipped)
+void AThirdPersonWeapon::EquippedWeapon(bool bEquipped, AActor* NewOwner)
 {
 	if (bEquipped)
 	{
+		SetOwner(NewOwner);
 		WeaponMesh->SetSimulatePhysics(false);
 		WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		FirstPersonWeapon->GetWeaponMesh()->SetHiddenInGame(false);
 		PickupVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
 	else
 	{
 		WeaponMesh->SetSimulatePhysics(true);
 		WeaponMesh->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
-		FirstPersonWeapon->GetWeaponMesh()->SetHiddenInGame(true);
 		PickupVolume->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	}
 }
-

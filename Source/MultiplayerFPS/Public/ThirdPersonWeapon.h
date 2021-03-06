@@ -30,8 +30,7 @@ protected:
 	virtual void BeginPlay() override;
 
 public:
-	//UFUNCTION(NetMulticast, Reliable)
-		void EquippedWeapon(bool bEquipped);
+	void EquippedWeapon(bool bEquipped, AActor* NewOwner);
 	
 	FORCEINLINE USkeletalMeshComponent* GetWeaponMesh() const { return WeaponMesh; }
 
@@ -46,12 +45,12 @@ public:
 private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = true))
 		USkeletalMeshComponent* WeaponMesh = nullptr;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = true))
-		TSubclassOf<AFirstPersonWeapon> FirstPersonClass;
-	
+		
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = true))
 		class USphereComponent* PickupVolume = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Weapon, meta = (AllowPrivateAccess = true))
+		TSubclassOf<AFirstPersonWeapon> FirstPersonClass;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Weapon, meta = (AllowPrivateAccess = true))
 		EWeaponType WeaponType;
@@ -68,5 +67,6 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Weapon, meta = (AllowPrivateAccess = true))
 		UAnimBlueprint* EquippedAnimOverride;
 
-	AFirstPersonWeapon* FirstPersonWeapon = nullptr;
+	UPROPERTY()
+		AFirstPersonWeapon* FirstPersonWeapon = nullptr;
 };

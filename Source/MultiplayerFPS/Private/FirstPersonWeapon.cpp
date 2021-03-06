@@ -14,7 +14,9 @@ AFirstPersonWeapon::AFirstPersonWeapon()
 	WeaponMesh->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No;
 	WeaponMesh->SetSimulatePhysics(false);
 	WeaponMesh->SetCollisionProfileName("NoCollision");
-	WeaponMesh->SetOnlyOwnerSee(true);
 	WeaponMesh->SetHiddenInGame(true);
+
+	SetReplicates(true);
+	AActor::SetReplicateMovement(true);
 }
 

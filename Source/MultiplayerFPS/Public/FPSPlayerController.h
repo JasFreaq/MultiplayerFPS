@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "MultiplayerFPS/Public/PlayerControllerInterface.h"
 #include "FPSPlayerController.generated.h"
 
 class AThirdPersonWeapon;
@@ -12,7 +13,7 @@ class AThirdPersonWeapon;
  * 
  */
 UCLASS()
-class MULTIPLAYERFPS_API AFPSPlayerController : public APlayerController
+class MULTIPLAYERFPS_API AFPSPlayerController : public APlayerController, public IPlayerControllerInterface
 {
 	GENERATED_BODY()
 	
@@ -40,11 +41,16 @@ private:
 	UPROPERTY()
 		UUserWidget* WeaponPickupNotify = nullptr;
 	
-	UFUNCTION()
+	
+	virtual void OnPlayerBeginOverlapWeapon(AThirdPersonWeapon* Weapon) override;
+
+	virtual void OnPlayerEndOverlapWeapon(AThirdPersonWeapon* Weapon) override;
+
+	/*UFUNCTION()
 		void OnPlayerCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 	UFUNCTION()
-		void OnPlayerCapsuleEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+		void OnPlayerCapsuleEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);*/
 
 	UFUNCTION(Client, Reliable)
 		void DisplayWeaponPickupNotify(bool bDisplay);
