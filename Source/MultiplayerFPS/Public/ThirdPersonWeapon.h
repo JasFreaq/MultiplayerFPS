@@ -6,6 +6,8 @@
 #include "GameFramework/Actor.h"
 #include "ThirdPersonWeapon.generated.h"
 
+class AFirstPersonWeapon;
+
 UENUM(BlueprintType)
 enum class EWeaponType : uint8
 {
@@ -27,16 +29,13 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
-
-	UFUNCTION(NetMulticast, Reliable)
+public:
+	//UFUNCTION(NetMulticast, Reliable)
 		void EquippedWeapon(bool bEquipped);
 	
 	FORCEINLINE USkeletalMeshComponent* GetWeaponMesh() const { return WeaponMesh; }
-	
-	FORCEINLINE USkeletalMeshComponent* GetFirstPersonMesh() const { return FirstPersonMesh; }
+
+	FORCEINLINE AFirstPersonWeapon* GetFirstPersonWeapon() const { return FirstPersonWeapon; }
 	
 	FORCEINLINE EWeaponType GetWeaponType() const { return WeaponType; }
 
@@ -49,7 +48,7 @@ private:
 		USkeletalMeshComponent* WeaponMesh = nullptr;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = true))
-		USkeletalMeshComponent* FirstPersonMesh = nullptr;
+		TSubclassOf<AFirstPersonWeapon> FirstPersonClass;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = true))
 		class USphereComponent* PickupVolume = nullptr;
@@ -68,4 +67,6 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Weapon, meta = (AllowPrivateAccess = true))
 		UAnimBlueprint* EquippedAnimOverride;
+
+	AFirstPersonWeapon* FirstPersonWeapon = nullptr;
 };

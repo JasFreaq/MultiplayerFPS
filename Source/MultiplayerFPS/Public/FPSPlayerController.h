@@ -21,6 +21,8 @@ protected:
 	
 	virtual void OnPossess(APawn* InPawn) override;
 
+	virtual void SetupInputComponent() override;
+
 private:
 	UPROPERTY(EditDefaultsOnly, Category = UI)
 		TSubclassOf<UUserWidget> WeaponPickupNotifyClass;
@@ -35,7 +37,8 @@ private:
 
 	AThirdPersonWeapon* OverlappedWeapon = nullptr;
 
-	UUserWidget* WeaponPickupNotify = nullptr;
+	UPROPERTY()
+		UUserWidget* WeaponPickupNotify = nullptr;
 	
 	UFUNCTION()
 		void OnPlayerCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
@@ -45,8 +48,11 @@ private:
 
 	UFUNCTION(Client, Reliable)
 		void DisplayWeaponPickupNotify(bool bDisplay);
-	
-	void WeaponEquipHandler();
+
+	void EquipInputHandle();
+
+	UFUNCTION(Server, Reliable, WithValidation)
+		void Server_WeaponEquipHandler();
 
 	void EquipWeapon(AThirdPersonWeapon* Weapon);
 

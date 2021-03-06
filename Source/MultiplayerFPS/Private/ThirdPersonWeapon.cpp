@@ -1,6 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Components/SphereComponent.h"
+#include "MultiplayerFPS/Public/FirstPersonWeapon.h"
 #include "ThirdPersonWeapon.h"
 
 // Sets default values
@@ -15,11 +16,7 @@ AThirdPersonWeapon::AThirdPersonWeapon()
 	WeaponMesh->SetSimulatePhysics(true);
 	WeaponMesh->SetCollisionProfileName("IgnoreOnlyPawn");
 	WeaponMesh->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
-
-	FirstPersonMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("First Person Mesh"));
-	FirstPersonMesh->SetupAttachment(RootComponent);
-	FirstPersonMesh->SetCollisionProfileName("NoCollision");
-	FirstPersonMesh->SetHiddenInGame(true);
+	WeaponMesh->SetOwnerNoSee(true);
 	
 	PickupVolume = CreateDefaultSubobject<USphereComponent>(TEXT("Pickup Volume"));
 	PickupVolume->SetupAttachment(RootComponent);
@@ -32,7 +29,6 @@ AThirdPersonWeapon::AThirdPersonWeapon()
 	SetReplicates(true);
     AActor::SetReplicateMovement(true);
 
-	FirstPersonMesh->SetIsReplicated(true);
 	PickupVolume->SetIsReplicated(true);
 }
 
@@ -40,31 +36,26 @@ AThirdPersonWeapon::AThirdPersonWeapon()
 void AThirdPersonWeapon::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
+	FActorSpawnParameters SpawnParams;
+	FirstPersonWeapon = Cast<AFirstPersonWeapon>(GetWorld()->SpawnActor(FirstPersonClass, &GetTransform(), SpawnParams));
+	FirstPersonWeapon->SetOwner(this);
 }
 
-// Called every frame
-void AThirdPersonWeapon::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-}
-
-void AThirdPersonWeapon::EquippedWeapon_Implementation(bool bEquipped)
+void AThirdPersonWeapon::EquippedWeapon/*_Implementation*/(bool bEquipped)
 {
 	if (bEquipped)
 	{
 		WeaponMesh->SetSimulatePhysics(false);
 		WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		FirstPersonMesh->SetOnlyOwnerSee(true);
-		FirstPersonMesh->SetHiddenInGame(false);
+		FirstPersonWeapon->GetWeaponMesh()->SetHiddenInGame(false);
 		PickupVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
 	else
 	{
 		WeaponMesh->SetSimulatePhysics(true);
 		WeaponMesh->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
-		FirstPersonMesh->SetHiddenInGame(true);
+		FirstPersonWeapon->GetWeaponMesh()->SetHiddenInGame(true);
 		PickupVolume->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	}
 }

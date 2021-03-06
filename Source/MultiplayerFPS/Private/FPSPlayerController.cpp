@@ -4,6 +4,7 @@
 #include "Components/CapsuleComponent.h"
 #include "MultiplayerFPS/MultiplayerFPSCharacter.h"
 #include "MultiplayerFPS/Public/FPSPlayerController.h"
+#include "MultiplayerFPS/Public/FirstPersonWeapon.h"
 #include "MultiplayerFPS/Public/ThirdPersonWeapon.h"
 
 void AFPSPlayerController::BeginPlay()
@@ -47,8 +48,15 @@ void AFPSPlayerController::OnPossess(APawn* InPawn)
 	}	
 }
 
+void AFPSPlayerController::SetupInputComponent()
+{
+	Super::SetupInputComponent();
+
+	InputComponent->BindAction("Pickup", IE_Pressed, this, &AFPSPlayerController::EquipInputHandle);
+}
+
 void AFPSPlayerController::OnPlayerCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+                                                       UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	if (OtherActor->ActorHasTag("Weapon"))
 	{
@@ -56,7 +64,14 @@ void AFPSPlayerController::OnPlayerCapsuleBeginOverlap(UPrimitiveComponent* Over
 		if (Weapon)
 		{
 			OverlappedWeapon = Weapon;
-			DisplayWeaponPickupNotify(true);
+			if (IsLocalPlayerController() && !WeaponPickupNotify->IsInViewport())
+			{
+				WeaponPickupNotify->AddToViewport();
+			}
+			else
+			{
+				DisplayWeaponPickupNotify(true);
+			}
 		}
 		else
 			UE_LOG(LogTemp, Warning, TEXT("%s has Weapon tag but is not a weapon."), *OtherActor->GetName());
@@ -66,57 +81,119 @@ void AFPSPlayerController::OnPlayerCapsuleBeginOverlap(UPrimitiveComponent* Over
 void AFPSPlayerController::OnPlayerCapsuleEndOverlap(UPrimitiveComponent* OverlappedComponent,
 	AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-	OverlappedWeapon = nullptr;
-	DisplayWeaponPickupNotify(false);
+	if (OtherActor->ActorHasTag("Weapon"))
+	{
+		AThirdPersonWeapon* Weapon = nullptr;
+		switch (OverlappedWeapon->GetWeaponType())
+		{
+		case EWeaponType::Primary:
+			if (EquippedPrimaryWeapon)
+			{
+				Weapon = EquippedPrimaryWeapon;
+			}
+			break;
+		case EWeaponType::Secondary:
+			if (EquippedSecondaryWeapon)
+			{
+				Weapon = EquippedSecondaryWeapon;
+			}
+			break;
+		case EWeaponType::Knife:
+			if (EquippedKnife)
+			{
+				Weapon = EquippedKnife;
+			}
+			break;
+		}
+
+		if (Weapon != OverlappedWeapon)
+			OverlappedComponent = nullptr;
+		
+		if (IsLocalPlayerController() && WeaponPickupNotify->IsInViewport())
+		{
+			WeaponPickupNotify->RemoveFromViewport();
+		}
+		else
+		{
+			DisplayWeaponPickupNotify(false);
+		}
+	}
 }
 
-void AFPSPlayerController::WeaponEquipHandler()
+void AFPSPlayerController::EquipInputHandle()
 {
-	switch (OverlappedWeapon->GetWeaponType())
+	Server_WeaponEquipHandler();
+}
+
+void AFPSPlayerController::Server_WeaponEquipHandler_Implementation()
+{
+	if (OverlappedWeapon)
 	{
-	case EWeaponType::Primary:
-		if (EquippedPrimaryWeapon)
+		switch (OverlappedWeapon->GetWeaponType())
 		{
-			DropWeapon(EquippedPrimaryWeapon);
+		case EWeaponType::Primary:
+			if (EquippedPrimaryWeapon)
+			{
+				DropWeapon(EquippedPrimaryWeapon);
+			}
+			EquippedPrimaryWeapon = OverlappedWeapon;
+			break;
+		case EWeaponType::Secondary:
+			if (EquippedSecondaryWeapon)
+			{
+				DropWeapon(EquippedSecondaryWeapon);
+			}
+			EquippedSecondaryWeapon = OverlappedWeapon;
+			break;
+		case EWeaponType::Knife:
+			if (EquippedKnife)
+			{
+				DropWeapon(EquippedKnife);
+			}
+			EquippedKnife = OverlappedWeapon;
+			break;
 		}
-		
-		break;
-	case EWeaponType::Secondary:
-		if (EquippedSecondaryWeapon)
-		{
-			DropWeapon(EquippedSecondaryWeapon);
-		}
-		
-		break;
-	case EWeaponType::Knife:
-		if (EquippedKnife)
-		{
-			DropWeapon(EquippedKnife);
-		}
-		
-		break;
+
+		EquipWeapon(OverlappedWeapon);
 	}
+}
+
+bool AFPSPlayerController::Server_WeaponEquipHandler_Validate()
+{
+	return true;
 }
 
 void AFPSPlayerController::EquipWeapon(AThirdPersonWeapon* Weapon)
 {
-
+	FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, false);
+	
+	Weapon->EquippedWeapon(true);
+	Weapon->AttachToComponent(OwnedPlayerCharacter->GetMesh(), AttachmentRules, Weapon->GetSocketName());
+	Weapon->GetFirstPersonWeapon()->AttachToComponent(OwnedPlayerCharacter->GetMesh1P(), AttachmentRules, Weapon->GetSocketName());
+	Weapon->SetOwner(this);
+	Weapon->GetFirstPersonWeapon()->SetOwner(this);
 }
 
 void AFPSPlayerController::DropWeapon(AThirdPersonWeapon* Weapon)
 {
-	
+	FDetachmentTransformRules DetachmentRules(EDetachmentRule::KeepWorld, false);
+
+	Weapon->EquippedWeapon(false);
+	Weapon->DetachFromActor(DetachmentRules);
+	Weapon->GetFirstPersonWeapon()->DetachFromActor(DetachmentRules);
+	Weapon->SetOwner(nullptr);
+	Weapon->GetFirstPersonWeapon()->SetOwner(Weapon);
 }
 
 void AFPSPlayerController::DisplayWeaponPickupNotify_Implementation(bool bDisplay)
 {
-	if (IsLocalPlayerController())
+	if (IsLocalPlayerController() && WeaponPickupNotify)
 	{
-		if (bDisplay)
+		if (bDisplay && !WeaponPickupNotify->IsInViewport())
 		{
 			WeaponPickupNotify->AddToViewport();
 		}
-		else
+		else if (!bDisplay && WeaponPickupNotify->IsInViewport())
 		{
 			WeaponPickupNotify->RemoveFromViewport();
 		}
