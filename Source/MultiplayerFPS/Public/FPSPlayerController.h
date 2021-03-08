@@ -13,7 +13,7 @@ class AThirdPersonWeapon;
  * 
  */
 UCLASS()
-class MULTIPLAYERFPS_API AFPSPlayerController : public APlayerController, public IPlayerControllerInterface
+class MULTIPLAYERFPS_API AFPSPlayerController : public APlayerController/*, public IPlayerControllerInterface*/
 {
 	GENERATED_BODY()
 	
@@ -42,15 +42,15 @@ private:
 		UUserWidget* WeaponPickupNotify = nullptr;
 	
 	
-	virtual void OnPlayerBeginOverlapWeapon(AThirdPersonWeapon* Weapon) override;
+	/*virtual void OnPlayerBeginOverlapWeapon(AThirdPersonWeapon* Weapon) override;
 
-	virtual void OnPlayerEndOverlapWeapon(AThirdPersonWeapon* Weapon) override;
+	virtual void OnPlayerEndOverlapWeapon() override;*/
 
-	/*UFUNCTION()
+	UFUNCTION()
 		void OnPlayerCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 	UFUNCTION()
-		void OnPlayerCapsuleEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);*/
+		void OnPlayerCapsuleEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 	UFUNCTION(Client, Reliable)
 		void DisplayWeaponPickupNotify(bool bDisplay);

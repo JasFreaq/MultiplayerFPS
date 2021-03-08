@@ -3,6 +3,7 @@
 #include "Components/SphereComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "MultiplayerFPS/Public/FirstPersonWeapon.h"
+#include "MultiplayerFPS/Public/PlayerControllerInterface.h"
 #include "ThirdPersonWeapon.h"
 
 // Sets default values
@@ -17,6 +18,7 @@ AThirdPersonWeapon::AThirdPersonWeapon()
 	WeaponMesh->SetSimulatePhysics(true);
 	WeaponMesh->SetCollisionProfileName("IgnoreOnlyPawn");
 	WeaponMesh->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
+	WeaponMesh->SetOwnerNoSee(true);
 	
 	PickupVolume = CreateDefaultSubobject<USphereComponent>(TEXT("Pickup Volume"));
 	PickupVolume->SetupAttachment(RootComponent);
@@ -37,24 +39,38 @@ void AThirdPersonWeapon::BeginPlay()
 {
 	Super::BeginPlay();
 
-	FActorSpawnParameters SpawnParams;
-	FirstPersonWeapon = Cast<AFirstPersonWeapon>(GetWorld()->SpawnActor(FirstPersonClass, &GetTransform(), SpawnParams));
-	FirstPersonWeapon->SetOwner(this);
+	if (HasAuthority())
+	{
+		FActorSpawnParameters SpawnParams;
+		FirstPersonWeapon = Cast<AFirstPersonWeapon>(GetWorld()->SpawnActor(FirstPersonClass, &GetTransform(), SpawnParams));
+		FirstPersonWeapon->SetOwner(this);
+	}
+
+	//PickupVolume->OnComponentBeginOverlap.AddDynamic(this, &AThirdPersonWeapon::OnBeginOverlap);
+	//PickupVolume->OnComponentEndOverlap.AddDynamic(this, &AThirdPersonWeapon::OnEndOverlap);
 }
 
-void AThirdPersonWeapon::EquippedWeapon(bool bEquipped, AActor* NewOwner)
+void AThirdPersonWeapon::EquippedWeapon(bool bEquipped)
 {
 	if (bEquipped)
 	{
-		SetOwner(NewOwner);
 		WeaponMesh->SetSimulatePhysics(false);
 		WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		FirstPersonWeapon->GetWeaponMesh()->SetVisibility(true);
 		PickupVolume->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
 	else
 	{
 		WeaponMesh->SetSimulatePhysics(true);
 		WeaponMesh->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
+		FirstPersonWeapon->GetWeaponMesh()->SetVisibility(false);
 		PickupVolume->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	}
+}
+
+void AThirdPersonWeapon::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AThirdPersonWeapon, FirstPersonWeapon);
 }

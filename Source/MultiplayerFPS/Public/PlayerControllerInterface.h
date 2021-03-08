@@ -26,5 +26,5 @@ class MULTIPLAYERFPS_API IPlayerControllerInterface
 public:
 	virtual void OnPlayerBeginOverlapWeapon(AThirdPersonWeapon* Weapon) = 0;
 
-	virtual void OnPlayerEndOverlapWeapon(AThirdPersonWeapon* Weapon) = 0;
+	virtual void OnPlayerEndOverlapWeapon() = 0;
 };

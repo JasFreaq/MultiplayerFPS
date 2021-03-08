@@ -2,6 +2,7 @@
 
 
 #include "FirstPersonWeapon.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values
 AFirstPersonWeapon::AFirstPersonWeapon()
@@ -14,9 +15,9 @@ AFirstPersonWeapon::AFirstPersonWeapon()
 	WeaponMesh->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No;
 	WeaponMesh->SetSimulatePhysics(false);
 	WeaponMesh->SetCollisionProfileName("NoCollision");
-	WeaponMesh->SetHiddenInGame(true);
-
+	WeaponMesh->SetOnlyOwnerSee(true);
+	WeaponMesh->SetVisibility(false);
+	
 	SetReplicates(true);
 	AActor::SetReplicateMovement(true);
 }
-

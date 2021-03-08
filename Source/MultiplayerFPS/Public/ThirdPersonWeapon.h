@@ -7,6 +7,7 @@
 #include "ThirdPersonWeapon.generated.h"
 
 class AFirstPersonWeapon;
+class IPlayerControllerInterface;
 
 UENUM(BlueprintType)
 enum class EWeaponType : uint8
@@ -30,7 +31,7 @@ protected:
 	virtual void BeginPlay() override;
 
 public:
-	void EquippedWeapon(bool bEquipped, AActor* NewOwner);
+	void EquippedWeapon(bool bEquipped);
 	
 	FORCEINLINE USkeletalMeshComponent* GetWeaponMesh() const { return WeaponMesh; }
 
@@ -67,6 +68,8 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Weapon, meta = (AllowPrivateAccess = true))
 		UAnimBlueprint* EquippedAnimOverride;
 
-	UPROPERTY()
+	UPROPERTY(Replicated)
 		AFirstPersonWeapon* FirstPersonWeapon = nullptr;
+
+	TArray<IPlayerControllerInterface*> OverlappingPlayers;
 };
