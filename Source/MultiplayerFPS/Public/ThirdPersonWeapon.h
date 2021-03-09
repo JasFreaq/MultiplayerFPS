@@ -4,10 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "MultiplayerFPS/Public/FPSStructs.h"
 #include "ThirdPersonWeapon.generated.h"
 
 class AFirstPersonWeapon;
-class IPlayerControllerInterface;
 
 UENUM(BlueprintType)
 enum class EWeaponType : uint8
@@ -41,7 +41,7 @@ public:
 
 	FORCEINLINE FName GetSocketName() const { return SocketName; }
 
-	FORCEINLINE UAnimBlueprint* GetAnimOverride() const { return EquippedAnimOverride; }
+	FORCEINLINE FWeaponProperties GetWeaponProperties() const { return WeaponProperties; }
 	
 private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = true))
@@ -60,16 +60,20 @@ private:
 		FName SocketName;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Weapon, meta = (AllowPrivateAccess = true))
+		FWeaponProperties WeaponProperties;
+
+	/*UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Weapon, meta = (AllowPrivateAccess = true))
 		float Damage;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Weapon, meta = (AllowPrivateAccess = true))
 		int32 MaxAmmo;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Weapon, meta = (AllowPrivateAccess = true))
-		UAnimBlueprint* EquippedAnimOverride;
+		UAnimBlueprint* ThirdPersonAnimOverride;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Weapon, meta = (AllowPrivateAccess = true))
+		UAnimBlueprint* FirstPersonAnimOverride;*/
 
 	UPROPERTY(Replicated)
 		AFirstPersonWeapon* FirstPersonWeapon = nullptr;
-
-	TArray<IPlayerControllerInterface*> OverlappingPlayers;
 };

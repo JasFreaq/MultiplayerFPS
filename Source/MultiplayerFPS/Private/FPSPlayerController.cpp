@@ -2,18 +2,28 @@
 
 #include "Blueprint/UserWidget.h"
 #include "Components/CapsuleComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "MultiplayerFPS/MultiplayerFPSCharacter.h"
+#include "MultiplayerFPS/MultiplayerFPSGameMode.h"
 #include "MultiplayerFPS/Public/FPSPlayerController.h"
 #include "MultiplayerFPS/Public/FirstPersonWeapon.h"
 #include "MultiplayerFPS/Public/ThirdPersonWeapon.h"
+#include "Net/UnrealNetwork.h"
 
 void AFPSPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
-
+	
 	if (IsLocalPlayerController())
 	{
+		HUD = CreateWidget(this, HUDClass);
 		WeaponPickupNotify = CreateWidget(this, WeaponPickupNotifyClass);
+	}
+
+	if (HasAuthority())
+	{
+		CurrentHealth = MaxHealth;
+		CurrentGameMode = Cast<AMultiplayerFPSGameMode>(UGameplayStatics::GetGameMode(this));
 	}
 }
 
@@ -32,10 +42,12 @@ void AFPSPlayerController::OnPossess(APawn* InPawn)
 				{
 					OwnedPlayerCharacter->GetCapsuleComponent()->OnComponentBeginOverlap.RemoveDynamic(this, &AFPSPlayerController::OnPlayerCapsuleBeginOverlap);
 					OwnedPlayerCharacter->GetCapsuleComponent()->OnComponentEndOverlap.RemoveDynamic(this, &AFPSPlayerController::OnPlayerCapsuleEndOverlap);
+					OwnedPlayerCharacter->OnTakePointDamage.RemoveDynamic(this, &AFPSPlayerController::OnPointDamage);
 					
 					OwnedPlayerCharacter = PlayerCharacter;
 					OwnedPlayerCharacter->GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(this, &AFPSPlayerController::OnPlayerCapsuleBeginOverlap);
 					OwnedPlayerCharacter->GetCapsuleComponent()->OnComponentEndOverlap.AddDynamic(this, &AFPSPlayerController::OnPlayerCapsuleEndOverlap);
+					OwnedPlayerCharacter->OnTakePointDamage.AddDynamic(this, &AFPSPlayerController::OnPointDamage);
 				}
 			}
 			else
@@ -43,6 +55,7 @@ void AFPSPlayerController::OnPossess(APawn* InPawn)
 				OwnedPlayerCharacter = PlayerCharacter;
 				OwnedPlayerCharacter->GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(this, &AFPSPlayerController::OnPlayerCapsuleBeginOverlap);
 				OwnedPlayerCharacter->GetCapsuleComponent()->OnComponentEndOverlap.AddDynamic(this, &AFPSPlayerController::OnPlayerCapsuleEndOverlap);
+				OwnedPlayerCharacter->OnTakePointDamage.AddDynamic(this, &AFPSPlayerController::OnPointDamage);
 			}		
 		}
 	}	
@@ -55,6 +68,26 @@ void AFPSPlayerController::SetupInputComponent()
 	InputComponent->BindAction("Pickup", IE_Pressed, this, &AFPSPlayerController::EquipInputHandle);
 }
 
+void AFPSPlayerController::SetHUD(bool bDisplay)
+{
+	if (IsLocalPlayerController() && HUD)
+	{
+		if (bDisplay && !HUD->IsInViewport())
+		{
+			HUD->AddToViewport();
+		}
+		else if (!bDisplay && HUD->IsInViewport())
+		{
+			HUD->RemoveFromViewport();
+		}
+	}
+	else
+	{
+		Client_SetHUD(bDisplay);
+	}
+}
+
+
 void AFPSPlayerController::OnPlayerCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
                                                        UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
@@ -64,14 +97,13 @@ void AFPSPlayerController::OnPlayerCapsuleBeginOverlap(UPrimitiveComponent* Over
 		if (Weapon)
 		{
 			OverlappedWeapon = Weapon;
-			UE_LOG(LogTemp, Warning, TEXT("Overlapped %s"), *OverlappedWeapon->GetName());
 			if (IsLocalPlayerController() && !WeaponPickupNotify->IsInViewport())
 			{
 				WeaponPickupNotify->AddToViewport();
 			}
 			else
 			{
-				DisplayWeaponPickupNotify(true);
+				SetWeaponPickupNotify(true);
 			}
 		}
 		else
@@ -92,7 +124,22 @@ void AFPSPlayerController::OnPlayerCapsuleEndOverlap(UPrimitiveComponent* Overla
 		}
 		else
 		{
-			DisplayWeaponPickupNotify(false);
+			SetWeaponPickupNotify(false);
+		}
+	}
+}
+
+void AFPSPlayerController::Client_SetHUD_Implementation(bool bDisplay)
+{
+	if (IsLocalPlayerController() && HUD)
+	{
+		if (bDisplay && !HUD->IsInViewport())
+		{
+			HUD->AddToViewport();
+		}
+		else if (!bDisplay && HUD->IsInViewport())
+		{
+			HUD->RemoveFromViewport();
 		}
 	}
 }
@@ -144,19 +191,21 @@ bool AFPSPlayerController::Server_WeaponEquipHandler_Validate()
 void AFPSPlayerController::EquipWeapon(AThirdPersonWeapon* Weapon)
 {
 	FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, false);
-	UE_LOG(LogTemp, Warning, TEXT("Equipped %s"), *Weapon->GetName());
+
 	Weapon->EquippedWeapon(true);
 	Weapon->AttachToComponent(OwnedPlayerCharacter->GetMesh(), AttachmentRules, Weapon->GetSocketName());
 	Weapon->GetFirstPersonWeapon()->AttachToComponent(OwnedPlayerCharacter->GetMesh1P(), AttachmentRules, Weapon->GetSocketName());
 
 	Weapon->SetOwner(GetPawn());
 	Weapon->GetFirstPersonWeapon()->SetOwner(GetPawn());
+
+	OwnedPlayerCharacter->SetActiveWeapon(Weapon->GetWeaponProperties());
 }
 
 void AFPSPlayerController::DropWeapon(AThirdPersonWeapon* Weapon)
 {
 	FDetachmentTransformRules DetachmentRules(EDetachmentRule::KeepWorld, false);
-	UE_LOG(LogTemp, Warning, TEXT("Dropped %s"), *Weapon->GetName());
+
 	Weapon->DetachFromActor(DetachmentRules);
 	Weapon->GetFirstPersonWeapon()->DetachFromActor(DetachmentRules);
 
@@ -165,7 +214,7 @@ void AFPSPlayerController::DropWeapon(AThirdPersonWeapon* Weapon)
 	Weapon->EquippedWeapon(false);
 }
 
-void AFPSPlayerController::DisplayWeaponPickupNotify_Implementation(bool bDisplay)
+void AFPSPlayerController::SetWeaponPickupNotify_Implementation(bool bDisplay)
 {
 	if (IsLocalPlayerController() && WeaponPickupNotify)
 	{
@@ -178,4 +227,32 @@ void AFPSPlayerController::DisplayWeaponPickupNotify_Implementation(bool bDispla
 			WeaponPickupNotify->RemoveFromViewport();
 		}
 	}
+}
+
+void AFPSPlayerController::OnPointDamage(AActor* DamagedActor, float Damage, AController* InstigatedBy,
+	FVector HitLocation, UPrimitiveComponent* FHitComponent, FName BoneName, FVector ShotFromDirection,
+	const UDamageType* DamageType, AActor* DamageCauser)
+{
+	CurrentHealth = FMath::Clamp(CurrentHealth - Damage, 0.f, MaxHealth);
+	if (CurrentHealth <= 0.f)
+	{
+		OwnedPlayerCharacter->OnDeath();
+		CurrentGameMode->RespawnHandler(this);
+	}
+}
+
+void AFPSPlayerController::Respawn()
+{
+	CurrentHealth = MaxHealth;
+
+	OwnedPlayerCharacter->OnRespawn();
+	FTransform SpawnTransform = CurrentGameMode->GetPlayerSpawnTransform(OwnedPlayerCharacter->GetIsBlack());
+	OwnedPlayerCharacter->SetActorLocationAndRotation(SpawnTransform.GetLocation(), SpawnTransform.GetRotation());
+}
+
+void AFPSPlayerController::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AFPSPlayerController, CurrentHealth);
 }

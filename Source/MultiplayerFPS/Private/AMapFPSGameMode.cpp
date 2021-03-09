@@ -6,6 +6,7 @@
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
 #include "MultiplayerFPS/MultiplayerFPSCharacter.h"
+#include "MultiplayerFPS/Public/FPSPlayerController.h"
 #include "MultiplayerFPS/Public/AMapFPSPlayerController.h"
 
 AAMapFPSGameMode::AAMapFPSGameMode() : Super()
@@ -22,15 +23,14 @@ void AAMapFPSGameMode::SpawnPlayerCharacter(APlayerController* NewPlayer, bool b
 	AActor* SpawnedCharacter;
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-
+	FTransform SpawnTransform = GetPlayerSpawnTransform(bBlack);
+	
 	if (bBlack)
 	{
-		FTransform SpawnTransform = BlackSpawnPoints[FMath::RandRange(0, BlackSpawnPoints.Num() - 1)]->GetActorTransform();
 		SpawnedCharacter = GetWorld()->SpawnActor(BlackCharacter, &SpawnTransform, SpawnParams);
 	}
 	else
 	{
-		FTransform SpawnTransform = SilverSpawnPoints[FMath::RandRange(0, SilverSpawnPoints.Num() - 1)]->GetActorTransform();
 		SpawnedCharacter = GetWorld()->SpawnActor(SilverCharacter, &SpawnTransform, SpawnParams);
 	}
 
@@ -38,6 +38,28 @@ void AAMapFPSGameMode::SpawnPlayerCharacter(APlayerController* NewPlayer, bool b
 	
 	NewPlayer->SetInputMode(FInputModeGameOnly());
 	NewPlayer->bShowMouseCursor = false;
+
+	AFPSPlayerController* FPSController = Cast<AFPSPlayerController>(NewPlayer);
+	if (FPSController)
+		FPSController->SetHUD(true);
+}
+
+FTransform AAMapFPSGameMode::GetPlayerSpawnTransform(bool bBlack)
+{
+	if (bBlack)
+	{
+		return BlackSpawnPoints[FMath::RandRange(0, BlackSpawnPoints.Num() - 1)]->GetActorTransform();
+	}
+
+	return SilverSpawnPoints[FMath::RandRange(0, SilverSpawnPoints.Num() - 1)]->GetActorTransform();;
+}
+
+void AAMapFPSGameMode::RespawnHandler(AFPSPlayerController* RespawnController)
+{
+	FTimerHandle RespawnDelayHandle;
+	FTimerDelegate RespawnDelayDelegate = FTimerDelegate::CreateUObject(RespawnController, &AFPSPlayerController::Respawn);
+
+	GetWorld()->GetTimerManager().SetTimer(RespawnDelayHandle, RespawnDelayDelegate, RespawnInterval, false);
 }
 
 void AAMapFPSGameMode::SetViewToLoginCamera(APlayerController* NewPlayer)

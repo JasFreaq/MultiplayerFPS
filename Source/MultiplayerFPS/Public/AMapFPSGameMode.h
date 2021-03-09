@@ -21,6 +21,10 @@ public:
 
 	void SpawnPlayerCharacter(APlayerController* NewPlayer, bool bBlack);
 
+	virtual FTransform GetPlayerSpawnTransform(bool bBlack) override;
+
+	virtual void RespawnHandler(AFPSPlayerController* RespawnController) override;
+	
 private:
 	void SetViewToLoginCamera(APlayerController* NewPlayer);
 	
@@ -31,6 +35,9 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = Teams)
 		TSubclassOf<AMultiplayerFPSCharacter> SilverCharacter;
+
+	UPROPERTY(EditDefaultsOnly, Category = Game)
+		float RespawnInterval;
 	
 	AActor* LoginCam = nullptr;
 
@@ -42,7 +49,7 @@ private:
 			
 protected:
 	virtual void BeginPlay() override;
-	
+		
 public:
 	virtual void PostLogin(APlayerController* NewPlayer) override;	
 };

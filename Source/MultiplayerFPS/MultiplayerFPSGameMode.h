@@ -10,6 +10,11 @@ UCLASS(minimalapi)
 class AMultiplayerFPSGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
+
+public:
+	virtual FTransform GetPlayerSpawnTransform(bool bBlack);
+
+	virtual void RespawnHandler(class AFPSPlayerController* RespawnController);
 };
 
 

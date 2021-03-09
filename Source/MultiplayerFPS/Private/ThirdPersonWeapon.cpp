@@ -3,7 +3,6 @@
 #include "Components/SphereComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "MultiplayerFPS/Public/FirstPersonWeapon.h"
-#include "MultiplayerFPS/Public/PlayerControllerInterface.h"
 #include "ThirdPersonWeapon.h"
 
 // Sets default values
@@ -46,6 +45,8 @@ void AThirdPersonWeapon::BeginPlay()
 		FirstPersonWeapon->SetOwner(this);
 	}
 
+	WeaponProperties.OwningWeapon = this;
+	
 	//PickupVolume->OnComponentBeginOverlap.AddDynamic(this, &AThirdPersonWeapon::OnBeginOverlap);
 	//PickupVolume->OnComponentEndOverlap.AddDynamic(this, &AThirdPersonWeapon::OnEndOverlap);
 }

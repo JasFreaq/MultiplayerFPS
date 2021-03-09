@@ -16,7 +16,7 @@ UCLASS()
 class MULTIPLAYERFPS_API AFPSPlayerController : public APlayerController/*, public IPlayerControllerInterface*/
 {
 	GENERATED_BODY()
-	
+
 protected:
 	virtual void BeginPlay() override;
 	
@@ -24,12 +24,28 @@ protected:
 
 	virtual void SetupInputComponent() override;
 
+public:
+	void SetHUD(bool bDisplay);
+
+	void Respawn();
+	
 private:
+	UPROPERTY(EditDefaultsOnly, Category = UI)
+		TSubclassOf<UUserWidget> HUDClass;
+
 	UPROPERTY(EditDefaultsOnly, Category = UI)
 		TSubclassOf<UUserWidget> WeaponPickupNotifyClass;
 	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = PlayerStats, meta = (AllowPrivateAccess = "true"))
+		float MaxHealth;
+
+	UPROPERTY(Replicated)
+		float CurrentHealth;
+	
 	class AMultiplayerFPSCharacter* OwnedPlayerCharacter = nullptr;
 
+	class AMultiplayerFPSGameMode* CurrentGameMode = nullptr;
+	
 	AThirdPersonWeapon* EquippedPrimaryWeapon = nullptr;
 	
 	AThirdPersonWeapon* EquippedSecondaryWeapon = nullptr;
@@ -39,12 +55,10 @@ private:
 	AThirdPersonWeapon* OverlappedWeapon = nullptr;
 
 	UPROPERTY()
-		UUserWidget* WeaponPickupNotify = nullptr;
-	
-	
-	/*virtual void OnPlayerBeginOverlapWeapon(AThirdPersonWeapon* Weapon) override;
+		UUserWidget* HUD = nullptr;
 
-	virtual void OnPlayerEndOverlapWeapon() override;*/
+	UPROPERTY()
+		UUserWidget* WeaponPickupNotify = nullptr;
 
 	UFUNCTION()
 		void OnPlayerCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
@@ -53,7 +67,10 @@ private:
 		void OnPlayerCapsuleEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 	UFUNCTION(Client, Reliable)
-		void DisplayWeaponPickupNotify(bool bDisplay);
+		void Client_SetHUD(bool bDisplay);
+	
+	UFUNCTION(Client, Reliable)
+		void SetWeaponPickupNotify(bool bDisplay);
 
 	void EquipInputHandle();
 
@@ -63,4 +80,7 @@ private:
 	void EquipWeapon(AThirdPersonWeapon* Weapon);
 
 	void DropWeapon(AThirdPersonWeapon* Weapon);
+
+	UFUNCTION()
+		void OnPointDamage(AActor* DamagedActor, float Damage, class AController* InstigatedBy, FVector HitLocation, class UPrimitiveComponent* FHitComponent, FName BoneName, FVector ShotFromDirection, const class UDamageType* DamageType, AActor* DamageCauser);
 };

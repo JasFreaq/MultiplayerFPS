@@ -15,6 +15,7 @@ AFirstPersonWeapon::AFirstPersonWeapon()
 	WeaponMesh->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No;
 	WeaponMesh->SetSimulatePhysics(false);
 	WeaponMesh->SetCollisionProfileName("NoCollision");
+	WeaponMesh->CastShadow = false;
 	WeaponMesh->SetOnlyOwnerSee(true);
 	WeaponMesh->SetVisibility(false);
 	
