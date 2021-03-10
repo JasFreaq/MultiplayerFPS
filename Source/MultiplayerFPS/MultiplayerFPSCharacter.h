@@ -4,10 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
-#include "MultiplayerFPS/Public/FPSStructs.h"
 #include "MultiplayerFPSCharacter.generated.h"
 
 class UInputComponent;
+class AThirdPersonWeapon;
 
 UCLASS(config=Game)
 class AMultiplayerFPSCharacter : public ACharacter
@@ -20,15 +20,15 @@ class AMultiplayerFPSCharacter : public ACharacter
 
 	/** First person camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	class UCameraComponent* FirstPersonCameraComponent;
-		
+		class UCameraComponent* FirstPersonCameraComponent;
+	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Team, meta = (AllowPrivateAccess = "true"))
 		bool bIsBlack;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Team, meta = (AllowPrivateAccess = "true"))
 		FName TeamTag;
 
-	FWeaponProperties ActiveWeapon;
+	AThirdPersonWeapon* ActiveWeapon;
 
 	FVector InitialMeshRelativeLocation;
 	
@@ -42,7 +42,7 @@ public:
 
 	UFUNCTION(NetMulticast, Reliable)
 		void OnRespawn();
-	
+		
 protected:
 	virtual void BeginPlay();
 
@@ -61,7 +61,9 @@ public:
 	
 protected:	
 	/** Fires a projectile. */
-	void OnFire();
+	void StartFire();
+	
+	void StopFire();
 
 	virtual void Jump() override;
 	
@@ -84,7 +86,10 @@ protected:
 	void LookUpAtRate(float Rate);
 
 	UFUNCTION(Server, Reliable, WithValidation)
-		void Server_Fire();
+		void Server_StartFire();
+
+	UFUNCTION(Server, Reliable, WithValidation)
+		void Server_StopFire();
 	
 	// APawn interface
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
@@ -101,7 +106,7 @@ public:
 	
 	FORCEINLINE FName GetTeamTag() const { return TeamTag; }
 
-	FORCEINLINE void SetActiveWeapon(FWeaponProperties NewWeapon) { ActiveWeapon = NewWeapon; }
+	FORCEINLINE void SetActiveWeapon(AThirdPersonWeapon* NewWeapon) { ActiveWeapon = NewWeapon; }
 
 	FORCEINLINE bool GetIsDead() const { return bIsDead; }
 };

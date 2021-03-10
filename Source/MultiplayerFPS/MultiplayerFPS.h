@@ -10,3 +10,5 @@
 #define SURFACE_TORSO SurfaceType2
 #define SURFACE_ARMS SurfaceType3
 #define SURFACE_LEGS SurfaceType4
+
+#define MUZZLE_FLASH_SOCKET FName(TEXT("MuzzleFlash"))

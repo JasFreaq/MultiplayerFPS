@@ -21,7 +21,7 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		float DamageFalloffRange;
-	
+			
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		int32 MaxAmmo;
 
@@ -30,10 +30,7 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		UAnimBlueprint* FirstPersonAnimOverride;
-
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		USoundBase* FireSound;
-
-	UPROPERTY()
-		AActor* OwningWeapon = nullptr;
 };

@@ -8,6 +8,7 @@
 #include "ThirdPersonWeapon.generated.h"
 
 class AFirstPersonWeapon;
+class AMultiplayerFPSCharacter;
 
 UENUM(BlueprintType)
 enum class EWeaponType : uint8
@@ -30,9 +31,18 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-public:
-	void EquippedWeapon(bool bEquipped);
+	virtual void Fire();
 	
+	UFUNCTION(NetMulticast, Reliable)
+		virtual void OnFireEffects(bool bActivate);
+	
+public:
+	virtual void EquippedWeapon(bool bEquipped, AActor* NewOwner = nullptr);
+
+	virtual void StartFire();
+
+	virtual void StopFire();
+		
 	FORCEINLINE USkeletalMeshComponent* GetWeaponMesh() const { return WeaponMesh; }
 
 	FORCEINLINE AFirstPersonWeapon* GetFirstPersonWeapon() const { return FirstPersonWeapon; }
@@ -42,7 +52,7 @@ public:
 	FORCEINLINE FName GetSocketName() const { return SocketName; }
 
 	FORCEINLINE FWeaponProperties GetWeaponProperties() const { return WeaponProperties; }
-	
+		
 private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = true))
 		USkeletalMeshComponent* WeaponMesh = nullptr;
@@ -50,6 +60,12 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = true))
 		class USphereComponent* PickupVolume = nullptr;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Effects, meta = (AllowPrivateAccess = true))
+		UParticleSystemComponent* ThirdPersonMuzzleFlash;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Effects, meta = (AllowPrivateAccess = true))
+		UParticleSystemComponent* FirstPersonMuzzleFlash;
+	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Weapon, meta = (AllowPrivateAccess = true))
 		TSubclassOf<AFirstPersonWeapon> FirstPersonClass;
 
@@ -61,19 +77,9 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Weapon, meta = (AllowPrivateAccess = true))
 		FWeaponProperties WeaponProperties;
-
-	/*UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Weapon, meta = (AllowPrivateAccess = true))
-		float Damage;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Weapon, meta = (AllowPrivateAccess = true))
-		int32 MaxAmmo;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Weapon, meta = (AllowPrivateAccess = true))
-		UAnimBlueprint* ThirdPersonAnimOverride;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Weapon, meta = (AllowPrivateAccess = true))
-		UAnimBlueprint* FirstPersonAnimOverride;*/
-
+		
 	UPROPERTY(Replicated)
 		AFirstPersonWeapon* FirstPersonWeapon = nullptr;
+
+	AMultiplayerFPSCharacter* OwningCharacter = nullptr;
 };

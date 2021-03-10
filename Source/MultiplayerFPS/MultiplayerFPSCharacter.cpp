@@ -8,6 +8,7 @@
 #include "Components/InputComponent.h"
 #include "DrawDebugHelpers.h"
 #include "MultiplayerFPS.h"
+#include "MultiplayerFPS/Public/ThirdPersonWeapon.h"
 #include "GameFramework/InputSettings.h"
 #include "GameFramework/PawnMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -44,7 +45,7 @@ AMultiplayerFPSCharacter::AMultiplayerFPSCharacter()
 	Mesh1P->CastShadow = false;
 	Mesh1P->SetRelativeRotation(FRotator(1.9f, -19.19f, 5.2f));
 	Mesh1P->SetRelativeLocation(FVector(-0.5f, -4.4f, -155.7f));
-
+	
 	// Note: The ProjectileClass and the skeletal mesh/anim blueprints for Mesh1P, FP_Gun, and VR_Gun 
 	// are set in the derived blueprint asset named MyCharacter to avoid direct content references in C++.
 	Tags.Add("Player");
@@ -103,7 +104,8 @@ void AMultiplayerFPSCharacter::SetupPlayerInputComponent(class UInputComponent* 
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
 
 	// Bind fire event
-	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &AMultiplayerFPSCharacter::OnFire);
+	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &AMultiplayerFPSCharacter::StartFire);
+	PlayerInputComponent->BindAction("Fire", IE_Released, this, &AMultiplayerFPSCharacter::StopFire);
 
 	// Bind movement events
 	PlayerInputComponent->BindAxis("MoveForward", this, &AMultiplayerFPSCharacter::MoveForward);
@@ -118,90 +120,31 @@ void AMultiplayerFPSCharacter::SetupPlayerInputComponent(class UInputComponent* 
 	PlayerInputComponent->BindAxis("LookUpRate", this, &AMultiplayerFPSCharacter::LookUpAtRate);
 }
 
-void AMultiplayerFPSCharacter::OnFire()
+void AMultiplayerFPSCharacter::StartFire()
 {
-	if (!bIsDead)
+	if (!HasAuthority())
 	{
-		if (!HasAuthority())
-		{
-			Server_Fire();
-			return;
-		}
+		Server_StartFire();
+		return;
+	}
+	
+	if (!bIsDead && ActiveWeapon)
+	{		
+		ActiveWeapon->StartFire();
+	}
+}
 
-		if (ActiveWeapon.OwningWeapon)
-		{
-			FVector EyeLocation;
-			FRotator EyeRotation;
-			GetActorEyesViewPoint(EyeLocation, EyeRotation);
+void AMultiplayerFPSCharacter::StopFire()
+{
+	if (!HasAuthority())
+	{
+		Server_StopFire();
+		return;
+	}
 
-			FHitResult HitResult;
-			FCollisionQueryParams CollisionQueryParams;
-			CollisionQueryParams.AddIgnoredActor(this);
-			CollisionQueryParams.AddIgnoredActor(ActiveWeapon.OwningWeapon);
-			CollisionQueryParams.bTraceComplex = true;
-			CollisionQueryParams.bReturnPhysicalMaterial = true;
-
-			GetWorld()->LineTraceSingleByChannel(HitResult, EyeLocation, EyeLocation + EyeRotation.Vector() * ActiveWeapon.MaxRange, SHOOTING_CHANNEL, CollisionQueryParams);
-			DrawDebugLine(GetWorld(), EyeLocation, HitResult.ImpactPoint, FColor::Red, true);
-
-			if (HitResult.bBlockingHit)
-			{
-				AMultiplayerFPSCharacter* HitPlayer = Cast<AMultiplayerFPSCharacter>(HitResult.GetActor());
-
-				if (HitPlayer)
-				{
-					if (!HitPlayer->ActorHasTag(TeamTag))
-					{
-						EPhysicalSurface SurfaceType = UGameplayStatics::GetSurfaceType(HitResult);
-						TMap<TEnumAsByte<EPhysicalSurface>, float> Damages = HitResult.Distance > ActiveWeapon.DamageFalloffRange ? ActiveWeapon.FalloffDamages : ActiveWeapon.MaxDamages;
-
-						float Damage;
-						switch (SurfaceType)
-						{
-						case SURFACE_HEAD:
-							Damage = *Damages.Find(SURFACE_HEAD);
-							break;
-						case SURFACE_TORSO:
-							Damage = *Damages.Find(SURFACE_TORSO);
-							break;
-						case SURFACE_ARMS:
-							Damage = *Damages.Find(SURFACE_ARMS);
-							break;
-						case SURFACE_LEGS:
-							Damage = *Damages.Find(SURFACE_LEGS);
-							break;
-						default:
-							Damage = 0;
-							UE_LOG(LogTemp, Error, TEXT("Player(%s) hit has missing SurfaceType in Physics Asset."), *HitPlayer->GetName());
-							break;
-						}
-
-						UGameplayStatics::ApplyPointDamage(HitResult.GetActor(), Damage, EyeRotation.Vector(), HitResult, GetController(), ActiveWeapon.OwningWeapon, UDamageType::StaticClass());
-					}
-				}
-				else
-				{
-
-				}
-			}
-		}
-
-		//// try and play the sound if specified
-		//if (FireSound != NULL)
-		//{
-		//	UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetActorLocation());
-		//}
-
-		//// try and play a firing animation if specified
-		//if (FireAnimation != NULL)
-		//{
-		//	// Get the animation object for the arms mesh
-		//	UAnimInstance* AnimInstance = Mesh1P->GetAnimInstance();
-		//	if (AnimInstance != NULL)
-		//	{
-		//		AnimInstance->Montage_Play(FireAnimation, 1.f);
-		//	}
-		//}
+	if (ActiveWeapon)
+	{
+		ActiveWeapon->StopFire();
 	}
 }
 
@@ -241,12 +184,22 @@ void AMultiplayerFPSCharacter::LookUpAtRate(float Rate)
 	AddControllerPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
 }
 
-void AMultiplayerFPSCharacter::Server_Fire_Implementation()
+void AMultiplayerFPSCharacter::Server_StartFire_Implementation()
 {
-	OnFire();
+	StartFire();
 }
 
-bool AMultiplayerFPSCharacter::Server_Fire_Validate()
+bool AMultiplayerFPSCharacter::Server_StartFire_Validate()
+{
+	return true;
+}
+
+void AMultiplayerFPSCharacter::Server_StopFire_Implementation()
+{
+	StopFire();
+}
+
+bool AMultiplayerFPSCharacter::Server_StopFire_Validate()
 {
 	return true;
 }

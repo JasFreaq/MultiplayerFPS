@@ -192,14 +192,11 @@ void AFPSPlayerController::EquipWeapon(AThirdPersonWeapon* Weapon)
 {
 	FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, false);
 
-	Weapon->EquippedWeapon(true);
+	Weapon->EquippedWeapon(true, GetPawn());
 	Weapon->AttachToComponent(OwnedPlayerCharacter->GetMesh(), AttachmentRules, Weapon->GetSocketName());
 	Weapon->GetFirstPersonWeapon()->AttachToComponent(OwnedPlayerCharacter->GetMesh1P(), AttachmentRules, Weapon->GetSocketName());
-
-	Weapon->SetOwner(GetPawn());
-	Weapon->GetFirstPersonWeapon()->SetOwner(GetPawn());
-
-	OwnedPlayerCharacter->SetActiveWeapon(Weapon->GetWeaponProperties());
+		
+	OwnedPlayerCharacter->SetActiveWeapon(Weapon);
 }
 
 void AFPSPlayerController::DropWeapon(AThirdPersonWeapon* Weapon)
@@ -208,9 +205,6 @@ void AFPSPlayerController::DropWeapon(AThirdPersonWeapon* Weapon)
 
 	Weapon->DetachFromActor(DetachmentRules);
 	Weapon->GetFirstPersonWeapon()->DetachFromActor(DetachmentRules);
-
-	Weapon->SetOwner(nullptr);
-	Weapon->GetFirstPersonWeapon()->SetOwner(Weapon);
 	Weapon->EquippedWeapon(false);
 }
 
