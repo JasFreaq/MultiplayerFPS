@@ -10,8 +10,7 @@
 #include "MultiplayerFPS.h"
 #include "MultiplayerFPS/Public/ThirdPersonWeapon.h"
 #include "GameFramework/InputSettings.h"
-#include "GameFramework/PawnMovementComponent.h"
-#include "Kismet/GameplayStatics.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogFPChar, Warning, All);
 
@@ -87,7 +86,8 @@ void AMultiplayerFPSCharacter::BeginPlay()
 
 	if (HasAuthority())
 		InitialMeshRelativeLocation = GetMesh()->GetRelativeLocation();
-	
+
+	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 	Tags.Add(TeamTag);
 }
 
@@ -106,6 +106,9 @@ void AMultiplayerFPSCharacter::SetupPlayerInputComponent(class UInputComponent* 
 	// Bind fire event
 	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &AMultiplayerFPSCharacter::StartFire);
 	PlayerInputComponent->BindAction("Fire", IE_Released, this, &AMultiplayerFPSCharacter::StopFire);
+
+	PlayerInputComponent->BindAction("Run", IE_Pressed, this, &AMultiplayerFPSCharacter::Run);
+	PlayerInputComponent->BindAction("Run", IE_Released, this, &AMultiplayerFPSCharacter::StopRunning);
 
 	// Bind movement events
 	PlayerInputComponent->BindAxis("MoveForward", this, &AMultiplayerFPSCharacter::MoveForward);
@@ -182,6 +185,41 @@ void AMultiplayerFPSCharacter::LookUpAtRate(float Rate)
 {
 	// calculate delta for this frame from the rate information
 	AddControllerPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
+}
+
+void AMultiplayerFPSCharacter::Run()
+{
+	if (!bIsDead)
+	{
+		if (HasAuthority())
+			Multi_Run(true);
+		else
+			Server_Run(true);
+	}
+}
+
+void AMultiplayerFPSCharacter::StopRunning()
+{
+	if (HasAuthority())
+		Multi_Run(false);
+	else
+		Server_Run(false);
+}
+
+void AMultiplayerFPSCharacter::Server_Run_Implementation(bool bRun)
+{
+	Multi_Run(bRun);
+}
+
+bool AMultiplayerFPSCharacter::Server_Run_Validate(bool bRun)
+{
+	return true;
+}
+
+void AMultiplayerFPSCharacter::Multi_Run_Implementation(bool bRun)
+{
+	bIsRunning = bRun;
+	GetCharacterMovement()->MaxWalkSpeed = bRun ? RunSpeed : WalkSpeed;
 }
 
 void AMultiplayerFPSCharacter::Server_StartFire_Implementation()

@@ -7,8 +7,7 @@
 #include "Particles/ParticleSystemComponent.h"
 #include "ThirdPersonWeapon.h"
 #include "MultiplayerFPS/MultiplayerFPSCharacter.h"
-
-#include "DrawDebugHelpers.h"
+#include "Components/DecalComponent.h"
 #include "Kismet/GameplayStatics.h"
 
 class AMultiplayerFPSCharacter;
@@ -72,7 +71,7 @@ void AThirdPersonWeapon::Fire()
 {
 	FVector EyeLocation;
 	FRotator EyeRotation;
-	GetActorEyesViewPoint(EyeLocation, EyeRotation);
+	GetOwner()->GetInstigatorController()->GetPlayerViewPoint(EyeLocation, EyeRotation);
 
 	FHitResult HitResult;
 	FCollisionQueryParams CollisionQueryParams;
@@ -118,9 +117,9 @@ void AThirdPersonWeapon::Fire()
 				UGameplayStatics::ApplyPointDamage(HitResult.GetActor(), Damage, EyeRotation.Vector(), HitResult, GetOwner()->GetInstigatorController(), this, UDamageType::StaticClass());
 			}
 		}
-		else
+		else if (WeaponProperties.BulletHoleDecal)
 		{
-
+			SpawnDecal(HitResult);
 		}
 	}
 
@@ -142,6 +141,17 @@ void AThirdPersonWeapon::Fire()
 	//		AnimInstance->Montage_Play(FireAnimation, 1.f);
 	//	}
 	//}
+}
+
+void AThirdPersonWeapon::SpawnDecal_Implementation(FHitResult HitResult)
+{
+	FVector Scale(8.f, 8.f, 8.f);
+	FRotator Rotation = FRotator(HitResult.Normal.Rotation().Pitch + 180, HitResult.Normal.Rotation().Yaw, HitResult.Normal.Rotation().Roll + 180);
+	UDecalComponent* Decal = UGameplayStatics::SpawnDecalAtLocation(this, WeaponProperties.BulletHoleDecal, Scale, HitResult.Location, Rotation, 8.f);
+	if (Decal)
+	{
+		Decal->SetFadeScreenSize(0.0001f);
+	}
 }
 
 void AThirdPersonWeapon::EquippedWeapon(bool bEquipped, AActor* NewOwner)
@@ -191,4 +201,5 @@ void AThirdPersonWeapon::GetLifetimeReplicatedProps(TArray<class FLifetimeProper
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(AThirdPersonWeapon, FirstPersonWeapon);
+	DOREPLIFETIME(AThirdPersonWeapon, OwningCharacter);
 }

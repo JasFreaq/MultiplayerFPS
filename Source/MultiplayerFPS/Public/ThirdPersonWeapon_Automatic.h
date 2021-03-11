@@ -14,9 +14,7 @@ class MULTIPLAYERFPS_API AThirdPersonWeapon_Automatic : public AThirdPersonWeapo
 {
 	GENERATED_BODY()
 
-public:
-	virtual void EquippedWeapon(bool bEquipped, AActor* NewOwner) override;
-	
+public:	
 	virtual void StartFire() override;
 
 	virtual void StopFire() override;
@@ -36,14 +34,35 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Weapon, meta = (ToolTip = "No. of bullets shot per burst. Only valid for SemiAutomatics.", AllowPrivateAccess = true))
 		float BurstCount;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Weapon, meta = (AllowPrivateAccess = true))
+		UCurveFloat* VerticalRecoilBeginCurve;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Weapon, meta = (AllowPrivateAccess = true))
+		UCurveFloat* VerticalRecoilRepeatCurve;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Weapon, meta = (AllowPrivateAccess = true))
+		UCurveFloat* HorizontalRecoilCurve;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Weapon, meta = (ToolTip = "No. of bullets to be shot before horizontal recoil begins.", AllowPrivateAccess = true))
+		int32 HorizontalRecoilRequirement;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Weapon, meta = (ClampMin = "0.1", ClampMax = "0.6", UIMin = "0.1", UIMax = "0.6", AllowPrivateAccess = true))
+		float VerticalDeviationLimit = 0.1f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Weapon, meta = (ClampMin = "0.1", ClampMax = "0.6", UIMin = "0.1", UIMax = "0.6", AllowPrivateAccess = true))
+		float HorizontalDeviationLimit = 0.1f;
+
+	UPROPERTY(Replicated)
+		int32 BulletsSpent = 0;
+
+	float OldVerticalRecoil;
+
+	float OldHorizontalRecoil;
 	
 	FTimerHandle FireTimerHandle;
 	
 	FTimerHandle BurstTimerHandle;
 
 	float LastFireTime;
-
-	int32 BulletsSpent;
-	
-	FRotator BaseControlRotation;
 };

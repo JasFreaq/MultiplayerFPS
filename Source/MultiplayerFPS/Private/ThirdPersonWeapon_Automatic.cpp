@@ -3,19 +3,9 @@
 #include "MultiplayerFPS/MultiplayerFPSCharacter.h"
 #include "ThirdPersonWeapon_Automatic.h"
 
-void AThirdPersonWeapon_Automatic::EquippedWeapon(bool bEquipped, AActor* NewOwner)
-{
-	Super::EquippedWeapon(bEquipped, NewOwner);
+#include "Net/UnrealNetwork.h"
 
-	if (bEquipped)
-	{
-		BaseControlRotation = NewOwner->GetInstigatorController()->GetControlRotation();
-	}
-	else
-	{
-		BaseControlRotation = FRotator::ZeroRotator;
-	}
-}
+#define BEGIN_RECOIL_CURVE_LIMIT 10
 
 void AThirdPersonWeapon_Automatic::StartFire()
 {
@@ -54,8 +44,66 @@ void AThirdPersonWeapon_Automatic::Fire()
 
 void AThirdPersonWeapon_Automatic::RecoilHandler_Implementation()
 {
-	if (OwningCharacter->GetInstigatorController()->IsLocalPlayerController())
+	if (GetOwner()->GetInstigatorController()->IsLocalPlayerController())
 	{
+		//Calculate Base Recoil Amounts
+		float VerticalRecoilAmount;
+		float HorizontalRecoilAmount;
+
+		float VerticalRecoil;
+		float HorizontalRecoil = 0;
+
+		if (BulletsSpent <= 1)
+		{
+			OldVerticalRecoil = 0;
+			OldHorizontalRecoil = 0;
+		}		
 		
+		if (BulletsSpent <= BEGIN_RECOIL_CURVE_LIMIT)
+		{
+			VerticalRecoil = VerticalRecoilBeginCurve->GetFloatValue(BulletsSpent);
+		}
+		else
+		{
+			VerticalRecoil = VerticalRecoilRepeatCurve->GetFloatValue(BulletsSpent - BEGIN_RECOIL_CURVE_LIMIT);
+		}
+
+		if (BulletsSpent > HorizontalRecoilRequirement)
+		{
+			HorizontalRecoil = HorizontalRecoilCurve->GetFloatValue(BulletsSpent - HorizontalRecoilRequirement);
+		}		
+		
+		//Adjust Recoil Amounts
+		VerticalRecoilAmount = VerticalRecoil - OldVerticalRecoil;
+		HorizontalRecoilAmount = HorizontalRecoil - OldHorizontalRecoil;
+
+		if (BulletsSpent != 1 && OwningCharacter->GetIsRunning())
+		{
+			float VerticalDeviation = FMath::RandRange(-VerticalDeviationLimit, VerticalDeviationLimit);
+			float HorizontalDeviation = FMath::RandRange(-HorizontalDeviationLimit, HorizontalDeviationLimit);
+
+			VerticalRecoilAmount += VerticalDeviation;
+			HorizontalRecoilAmount += HorizontalDeviation;
+		}
+		
+		if ((BulletsSpent - HorizontalRecoilRequirement) % BEGIN_RECOIL_CURVE_LIMIT > 0)
+		{
+			float HorizontalDeviationMultiplier = 1 + ((BulletsSpent - HorizontalRecoilRequirement) % BEGIN_RECOIL_CURVE_LIMIT) * 0.2;
+
+			HorizontalRecoilAmount *= HorizontalDeviationMultiplier;
+		}
+				
+		FRotator ControlRotation = GetOwner()->GetInstigatorController()->GetControlRotation();
+		GetOwner()->GetInstigatorController()->SetControlRotation(FRotator(ControlRotation.Pitch + VerticalRecoilAmount, ControlRotation.Yaw + HorizontalRecoilAmount, ControlRotation.Roll));
+
+		OldVerticalRecoil = VerticalRecoil;
+		OldHorizontalRecoil = HorizontalRecoil;
 	}
+}
+
+void AThirdPersonWeapon_Automatic::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AThirdPersonWeapon_Automatic, BulletsSpent);
 }

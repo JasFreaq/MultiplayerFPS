@@ -30,6 +30,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		UAnimBlueprint* FirstPersonAnimOverride;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		UMaterialInterface* BulletHoleDecal;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		USoundBase* FireSound;

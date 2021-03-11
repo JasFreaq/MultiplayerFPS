@@ -35,6 +35,12 @@ protected:
 	
 	UFUNCTION(NetMulticast, Reliable)
 		virtual void OnFireEffects(bool bActivate);
+
+	UFUNCTION(NetMulticast, Reliable)
+		virtual void SpawnDecal(FHitResult HitResult);
+
+	UPROPERTY(Replicated)
+		AMultiplayerFPSCharacter* OwningCharacter = nullptr;
 	
 public:
 	virtual void EquippedWeapon(bool bEquipped, AActor* NewOwner = nullptr);
@@ -80,6 +86,4 @@ private:
 		
 	UPROPERTY(Replicated)
 		AFirstPersonWeapon* FirstPersonWeapon = nullptr;
-
-	AMultiplayerFPSCharacter* OwningCharacter = nullptr;
 };

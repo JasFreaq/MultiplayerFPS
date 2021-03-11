@@ -22,6 +22,12 @@ class AMultiplayerFPSCharacter : public ACharacter
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 		class UCameraComponent* FirstPersonCameraComponent;
 	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = PlayerStats, meta = (AllowPrivateAccess = "true"))
+		float WalkSpeed = 600.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = PlayerStats, meta = (AllowPrivateAccess = "true"))
+		float RunSpeed = 1000.f;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Team, meta = (AllowPrivateAccess = "true"))
 		bool bIsBlack;
 
@@ -33,6 +39,8 @@ class AMultiplayerFPSCharacter : public ACharacter
 	FVector InitialMeshRelativeLocation;
 	
 	bool bIsDead = false;
+
+	bool bIsRunning = false;
 	
 public:
 	AMultiplayerFPSCharacter();
@@ -85,6 +93,16 @@ protected:
 	 */
 	void LookUpAtRate(float Rate);
 
+	void Run();
+
+	void StopRunning();
+
+	UFUNCTION(Server, Reliable, WithValidation)
+		void Server_Run(bool bRun);
+
+	UFUNCTION(NetMulticast, Reliable)
+		void Multi_Run(bool bRun);
+	
 	UFUNCTION(Server, Reliable, WithValidation)
 		void Server_StartFire();
 
@@ -109,5 +127,7 @@ public:
 	FORCEINLINE void SetActiveWeapon(AThirdPersonWeapon* NewWeapon) { ActiveWeapon = NewWeapon; }
 
 	FORCEINLINE bool GetIsDead() const { return bIsDead; }
+	
+	FORCEINLINE bool GetIsRunning() const { return bIsRunning; }
 };
 
