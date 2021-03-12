@@ -34,7 +34,7 @@ protected:
 	virtual void Fire();
 	
 	UFUNCTION(NetMulticast, Reliable)
-		virtual void OnFireEffects(bool bActivate);
+		virtual void OnFireEffects(/*bool bActivate*/);
 
 	UFUNCTION(NetMulticast, Reliable)
 		virtual void SpawnDecal(FHitResult HitResult);
@@ -66,11 +66,11 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = true))
 		class USphereComponent* PickupVolume = nullptr;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Effects, meta = (AllowPrivateAccess = true))
+	/*UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Effects, meta = (AllowPrivateAccess = true))
 		UParticleSystemComponent* ThirdPersonMuzzleFlash;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Effects, meta = (AllowPrivateAccess = true))
-		UParticleSystemComponent* FirstPersonMuzzleFlash;
+		UParticleSystemComponent* FirstPersonMuzzleFlash;*/
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Weapon, meta = (AllowPrivateAccess = true))
 		TSubclassOf<AFirstPersonWeapon> FirstPersonClass;

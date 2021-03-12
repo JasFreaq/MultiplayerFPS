@@ -11,6 +11,7 @@
 #include "MultiplayerFPS/Public/ThirdPersonWeapon.h"
 #include "GameFramework/InputSettings.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Net/UnrealNetwork.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogFPChar, Warning, All);
 
@@ -79,6 +80,17 @@ void AMultiplayerFPSCharacter::OnRespawn_Implementation()
 	GetMesh()->SetRelativeRotation(FRotator(0.f, -90.f, 0.f));
 }
 
+void AMultiplayerFPSCharacter::SetActiveWeapon_Implementation(AThirdPersonWeapon* NewWeapon)
+{
+	if (HasAuthority())
+		ActiveWeapon = NewWeapon;
+
+	if (NewWeapon->GetWeaponType() == EWeaponType::Knife)
+		bIsCurrentlyUsingKnife = true;
+	else
+		bIsCurrentlyUsingKnife = false;
+}
+
 void AMultiplayerFPSCharacter::BeginPlay()
 {
 	// Call the base class  
@@ -130,9 +142,10 @@ void AMultiplayerFPSCharacter::StartFire()
 		Server_StartFire();
 		return;
 	}
-	
+		
 	if (!bIsDead && ActiveWeapon)
-	{		
+	{
+		bIsShooting = true;
 		ActiveWeapon->StartFire();
 	}
 }
@@ -144,9 +157,10 @@ void AMultiplayerFPSCharacter::StopFire()
 		Server_StopFire();
 		return;
 	}
-
+		
 	if (ActiveWeapon)
 	{
+		bIsShooting = false;
 		ActiveWeapon->StopFire();
 	}
 }
@@ -240,4 +254,11 @@ void AMultiplayerFPSCharacter::Server_StopFire_Implementation()
 bool AMultiplayerFPSCharacter::Server_StopFire_Validate()
 {
 	return true;
+}
+
+void AMultiplayerFPSCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AMultiplayerFPSCharacter, bIsShooting);
 }

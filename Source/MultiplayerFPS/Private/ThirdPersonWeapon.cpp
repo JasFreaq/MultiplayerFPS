@@ -31,21 +31,21 @@ AThirdPersonWeapon::AThirdPersonWeapon()
 	PickupVolume->SetCollisionProfileName("OverlapOnlyPawn");
 	PickupVolume->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 
-	ThirdPersonMuzzleFlash = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("ThirdPersonMuzzleFlash"));
+	/*ThirdPersonMuzzleFlash = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("ThirdPersonMuzzleFlash"));
 	ThirdPersonMuzzleFlash->SetAutoActivate(false);
 	ThirdPersonMuzzleFlash->SetOwnerNoSee(true);
 
 	FirstPersonMuzzleFlash = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("FirstPersonMuzzleFlash"));
 	FirstPersonMuzzleFlash->SetAutoActivate(false);
-	FirstPersonMuzzleFlash->SetOnlyOwnerSee(true);
+	FirstPersonMuzzleFlash->SetOnlyOwnerSee(true);*/
 	
 	Tags.Add("Weapon");
 	
 	SetReplicates(true);
     AActor::SetReplicateMovement(true);
 
-	ThirdPersonMuzzleFlash->SetIsReplicated(true);
-	FirstPersonMuzzleFlash->SetIsReplicated(true);
+	/*ThirdPersonMuzzleFlash->SetIsReplicated(true);
+	FirstPersonMuzzleFlash->SetIsReplicated(true);*/
 	
 	PickupVolume->SetIsReplicated(true);
 }
@@ -61,9 +61,9 @@ void AThirdPersonWeapon::BeginPlay()
 		FirstPersonWeapon = Cast<AFirstPersonWeapon>(GetWorld()->SpawnActor(FirstPersonClass, &GetTransform(), SpawnParams));
 		FirstPersonWeapon->SetOwner(this);
 
-		FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, false);
+		/*FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, false);
 		ThirdPersonMuzzleFlash->AttachToComponent(WeaponMesh, AttachmentRules, MUZZLE_FLASH_SOCKET);
-		FirstPersonMuzzleFlash->AttachToComponent(FirstPersonWeapon->GetWeaponMesh(), AttachmentRules, MUZZLE_FLASH_SOCKET);
+		FirstPersonMuzzleFlash->AttachToComponent(FirstPersonWeapon->GetWeaponMesh(), AttachmentRules, MUZZLE_FLASH_SOCKET);*/
 	}
 }
 
@@ -93,20 +93,24 @@ void AThirdPersonWeapon::Fire()
 				EPhysicalSurface SurfaceType = UGameplayStatics::GetSurfaceType(HitResult);
 				TMap<TEnumAsByte<EPhysicalSurface>, float> Damages = HitResult.Distance > WeaponProperties.DamageFalloffRange ? WeaponProperties.FalloffDamages : WeaponProperties.MaxDamages;
 
-				float Damage;
+				float Damage = 0;
 				switch (SurfaceType)
 				{
 				case SURFACE_HEAD:
-					Damage = *Damages.Find(SURFACE_HEAD);
+					if (Damages.Contains(SURFACE_HEAD))
+						Damage = *Damages.Find(SURFACE_HEAD);
 					break;
 				case SURFACE_TORSO:
-					Damage = *Damages.Find(SURFACE_TORSO);
+					if (Damages.Contains(SURFACE_TORSO))
+						Damage = *Damages.Find(SURFACE_TORSO);
 					break;
 				case SURFACE_ARMS:
-					Damage = *Damages.Find(SURFACE_ARMS);
+					if (Damages.Contains(SURFACE_ARMS))
+						Damage = *Damages.Find(SURFACE_ARMS);
 					break;
 				case SURFACE_LEGS:
-					Damage = *Damages.Find(SURFACE_LEGS);
+					if (Damages.Contains(SURFACE_LEGS))
+						Damage = *Damages.Find(SURFACE_LEGS);
 					break;
 				default:
 					Damage = 0;
@@ -123,23 +127,12 @@ void AThirdPersonWeapon::Fire()
 		}
 	}
 
-	OnFireEffects(true);
+	OnFireEffects(/*true*/);
 
 	//// try and play the sound if specified
 	//if (FireSound != NULL)
 	//{
 	//	UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetActorLocation());
-	//}
-
-	//// try and play a firing animation if specified
-	//if (FireAnimation != NULL)
-	//{
-	//	// Get the animation object for the arms mesh
-	//	UAnimInstance* AnimInstance = Mesh1P->GetAnimInstance();
-	//	if (AnimInstance != NULL)
-	//	{
-	//		AnimInstance->Montage_Play(FireAnimation, 1.f);
-	//	}
 	//}
 }
 
@@ -187,13 +180,38 @@ void AThirdPersonWeapon::StartFire()
 
 void AThirdPersonWeapon::StopFire()
 {
-	OnFireEffects(false);
+	
 }
 
-void AThirdPersonWeapon::OnFireEffects_Implementation(bool bActivate)
+void AThirdPersonWeapon::OnFireEffects_Implementation(/*bool bActivate*/)
 {
-	ThirdPersonMuzzleFlash->Activate(bActivate);
-	FirstPersonMuzzleFlash->Activate(bActivate);
+	/*
+	This code and other places where these were used were commented out because the animations
+	already have effects and sound and it was cleaner to use them. However, I have commented
+	the code instead of deleting it as it may prove useful for reference as an alternate way to
+	set up effects if they aren't set up in the animations.
+	*/
+	//ThirdPersonMuzzleFlash->Activate(bActivate);
+	//FirstPersonMuzzleFlash->Activate(bActivate);
+
+	if (WeaponProperties.FireAnim)
+	{
+		if (GetOwner()->GetInstigatorController())
+		{
+			if (GetOwner()->GetInstigatorController()->IsLocalPlayerController())
+			{
+				FirstPersonWeapon->GetWeaponMesh()->PlayAnimation(WeaponProperties.FireAnim, false);
+			}
+			else
+			{
+				WeaponMesh->PlayAnimation(WeaponProperties.FireAnim, false);
+			}
+		}
+		else
+		{
+			WeaponMesh->PlayAnimation(WeaponProperties.FireAnim, false);
+		}
+	}
 }
 
 void AThirdPersonWeapon::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const

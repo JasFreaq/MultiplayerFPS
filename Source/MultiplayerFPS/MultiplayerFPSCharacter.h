@@ -37,10 +37,18 @@ class AMultiplayerFPSCharacter : public ACharacter
 	AThirdPersonWeapon* ActiveWeapon;
 
 	FVector InitialMeshRelativeLocation;
-	
-	bool bIsDead = false;
 
-	bool bIsRunning = false;
+	UPROPERTY(BlueprintReadOnly, Category = State, meta = (AllowPrivateAccess = "true"))
+		bool bIsDead = false;
+
+	UPROPERTY(BlueprintReadOnly, Category = State, meta = (AllowPrivateAccess = "true"))
+		bool bIsRunning = false;
+
+	UPROPERTY(BlueprintReadOnly, Category = State, meta = (AllowPrivateAccess = "true"))
+		bool bIsCurrentlyUsingKnife = true;
+
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = State, meta = (AllowPrivateAccess = "true"))
+		bool bIsShooting = false;
 	
 public:
 	AMultiplayerFPSCharacter();
@@ -50,7 +58,10 @@ public:
 
 	UFUNCTION(NetMulticast, Reliable)
 		void OnRespawn();
-		
+
+	UFUNCTION(NetMulticast, Reliable)
+		void SetActiveWeapon(AThirdPersonWeapon* NewWeapon);
+	
 protected:
 	virtual void BeginPlay();
 
@@ -123,8 +134,6 @@ public:
 	FORCEINLINE bool GetIsBlack() const { return bIsBlack; }
 	
 	FORCEINLINE FName GetTeamTag() const { return TeamTag; }
-
-	FORCEINLINE void SetActiveWeapon(AThirdPersonWeapon* NewWeapon) { ActiveWeapon = NewWeapon; }
 
 	FORCEINLINE bool GetIsDead() const { return bIsDead; }
 	

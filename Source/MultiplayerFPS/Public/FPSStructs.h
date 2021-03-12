@@ -33,6 +33,12 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		UMaterialInterface* BulletHoleDecal;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		UAnimSequence* FireAnim;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		UAnimSequence* ReloadAnim;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		USoundBase* FireSound;
